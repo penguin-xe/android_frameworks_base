@@ -236,6 +236,7 @@ import com.android.server.wm.CrossDeviceService;
 import com.android.server.wm.WindowManagerGlobalLock;
 import com.android.server.wm.WindowManagerService;
 import com.android.server.lineage.health.HealthInterfaceService;
+import com.android.server.neoteric.CustomDeviceConfigService;
 
 import dalvik.system.VMRuntime;
 import dalvik.system.PathClassLoader;
@@ -2657,6 +2658,11 @@ public final class SystemServer implements Dumpable {
 
             t.traceBegin("StartBackgroundInstallControlService");
             mSystemServiceManager.startService(BackgroundInstallControlService.class);
+            t.traceEnd();
+
+            // CustomDeviceConfigService
+            t.traceBegin("StartCustomDeviceConfigService");
+            mSystemServiceManager.startService(CustomDeviceConfigService.class);
             t.traceEnd();
 
             t.traceBegin("StartHealthService");
