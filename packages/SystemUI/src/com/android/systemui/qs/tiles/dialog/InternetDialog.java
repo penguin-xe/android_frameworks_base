@@ -357,6 +357,7 @@ public class InternetDialog extends SystemUIDialog implements
         mHandler.removeCallbacks(mHideProgressBarRunnable);
         mHandler.removeCallbacks(mHideSearchingRunnable);
         mMobileNetworkLayout.setOnClickListener(null);
+        mMobileDataToggle.setOnClickListener(null);
         mHotspotLayout.setOnClickListener(null);
         mHotspotToggle.setOnCheckedChangeListener(null);
         mConnectedWifListLayout.setOnClickListener(null);
