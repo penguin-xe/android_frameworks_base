@@ -30,11 +30,11 @@ public enum ShellProtoLogGroup implements IProtoLogGroup {
             Consts.TAG_WM_SHELL),
     WM_SHELL_TASK_ORG(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, false,
             Consts.TAG_WM_SHELL),
-    WM_SHELL_TRANSITIONS(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, true,
+    WM_SHELL_TRANSITIONS(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, false,
             Consts.TAG_WM_SHELL),
-    WM_SHELL_RECENTS_TRANSITION(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, true,
+    WM_SHELL_RECENTS_TRANSITION(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, false,
             "ShellRecents"),
-    WM_SHELL_DRAG_AND_DROP(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, true,
+    WM_SHELL_DRAG_AND_DROP(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, false,
             "ShellDragAndDrop"),
     WM_SHELL_STARTING_WINDOW(Consts.ENABLE_DEBUG, Consts.ENABLE_LOG_TO_PROTO_DEBUG, false,
             Consts.TAG_WM_STARTING_WINDOW),
@@ -119,7 +119,7 @@ public enum ShellProtoLogGroup implements IProtoLogGroup {
         private static final String TAG_WM_STARTING_WINDOW = "ShellStartingWindow";
         private static final String TAG_WM_SPLIT_SCREEN = "ShellSplitScreen";
 
-        private static final boolean ENABLE_DEBUG = true;
-        private static final boolean ENABLE_LOG_TO_PROTO_DEBUG = true;
+        private static final boolean ENABLE_DEBUG = false;
+        private static final boolean ENABLE_LOG_TO_PROTO_DEBUG = false;
     }
 }
