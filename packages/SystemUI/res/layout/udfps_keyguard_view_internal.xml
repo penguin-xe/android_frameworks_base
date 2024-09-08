@@ -41,7 +41,7 @@
         android:scaleType="centerCrop"
         app:lottie_autoPlay="true"
         app:lottie_loop="true"
-        app:lottie_speed="0.5"
+        app:lottie_speed="0.1"
         app:lottie_rawRes="@raw/udfps_aod_fp"/>
 
     <!-- LockScreen fingerprint icon from 0 stroke width to full width -->
@@ -51,8 +51,7 @@
         android:layout_height="63dp"
         android:layout_gravity="center"
         android:scaleType="centerCrop"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_speed="0.85"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
         app:lottie_rawRes="@raw/udfps_lockscreen_fp"/>
 </FrameLayout>
