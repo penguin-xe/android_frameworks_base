@@ -580,21 +580,6 @@ public class MediaControlPanel {
             mMediaViewController.refreshState();
         }
 
-        // Turbulence noise
-        if (shouldPlayTurbulenceNoise()) {
-            if (mTurbulenceNoiseAnimationConfig == null) {
-                mTurbulenceNoiseAnimationConfig =
-                        createTurbulenceNoiseAnimation();
-            }
-            // Color will be correctly updated in ColorSchemeTransition.
-            mTurbulenceNoiseController.play(
-                    mTurbulenceNoiseAnimationConfig
-            );
-            mMainExecutor.executeDelayed(
-                    mTurbulenceNoiseController::finish,
-                    TURBULENCE_NOISE_PLAY_DURATION
-            );
-        }
         mButtonClicked = false;
         mWasPlaying = isPlaying();
 
@@ -1210,11 +1195,6 @@ public class MediaControlPanel {
                         /* shouldDistort= */ false
                 )
         );
-    }
-
-    private boolean shouldPlayTurbulenceNoise() {
-        return mFeatureFlags.isEnabled(Flags.UMO_TURBULENCE_NOISE) && mButtonClicked && !mWasPlaying
-                && isPlaying();
     }
 
     private TurbulenceNoiseAnimationConfig createTurbulenceNoiseAnimation() {
