@@ -12466,6 +12466,12 @@ public final class Settings {
          * @hide
          */
         public static final String STATUS_BAR_QUICK_QS_PULLDOWN = "status_bar_quick_qs_pulldown";
+
+	/**
+         * Boolean value whether activate keyguard affordance shortcuts on short press
+         * @hide
+         */
+        public static final String KEYGUARD_AFFORDANCE_SINGLE_TAP = "keyguard_affordance_single_tap";
     }
 
     /**
