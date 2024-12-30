@@ -18728,6 +18728,13 @@ public final class Settings {
         public static final String REPAIR_MODE_ACTIVE = "repair_mode_active";
 
         /**
+         * Minimal value in decimal percentage auto brightness should go to
+         * @hide
+         */
+        @Readable
+        public static final String USER_MIN_AUTO_BRIGHTNESS = "user_min_auto_brightness";
+
+        /**
          * Settings migrated from Wear OS settings provider.
          * @hide
          */

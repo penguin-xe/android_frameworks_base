@@ -24,12 +24,14 @@ import android.app.TaskStackListener;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.hardware.display.BrightnessConfiguration;
 import android.hardware.display.DisplayManagerInternal.DisplayPowerRequest;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -37,6 +39,7 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.provider.Settings;
 import android.util.EventLog;
 import android.util.MathUtils;
 import android.util.Slog;
@@ -44,6 +47,7 @@ import android.util.TimeUtils;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.display.BrightnessSynchronizer;
+import com.android.internal.display.BrightnessUtils;
 import com.android.internal.os.BackgroundThread;
 import com.android.server.EventLogTags;
 import com.android.server.display.brightness.BrightnessEvent;
@@ -247,6 +251,9 @@ public class AutomaticBrightnessController {
     private Clock mClock;
     private final Injector mInjector;
 
+    private final SettingsObserver mSettingsObserver;
+    private int mUserMinBrightness = 0;
+
     AutomaticBrightnessController(Callbacks callbacks, Looper looper,
             SensorManager sensorManager, Sensor lightSensor,
             BrightnessMappingStrategy interactiveModeBrightnessMapper,
@@ -337,6 +344,9 @@ public class AutomaticBrightnessController {
 
         // Use the given short-term model
         setScreenBrightnessByUser(userLux, userBrightness);
+
+        mSettingsObserver = new SettingsObserver(mHandler);
+        mSettingsObserver.updateAll();
     }
 
     /**
@@ -444,6 +454,13 @@ public class AutomaticBrightnessController {
 
         if (changed) {
             updateAutoBrightness(false /*sendUpdate*/, userInitiatedChange);
+        }
+
+        if (enable) {
+            mSettingsObserver.observe();
+            mSettingsObserver.updateAll();
+        } else {
+            mSettingsObserver.stop();
         }
     }
 
@@ -953,6 +970,14 @@ public class AutomaticBrightnessController {
                         + "mScreenAutoBrightness=" + mScreenAutoBrightness + ", "
                         + "newScreenAutoBrightness=" + newScreenAutoBrightness);
             }
+            if (!isManuallySet && mUserMinBrightness > 0) {
+                final float min = PowerManager.BRIGHTNESS_OFF + 1;
+                final float max = PowerManager.BRIGHTNESS_ON;
+                final float user = ((float) mUserMinBrightness / 100f) * (max - min) + min;
+                final float userLinearBrightness = BrightnessUtils.convertGammaToLinear(
+                        MathUtils.norm(min, max, user));
+                newScreenAutoBrightness = Math.max(userLinearBrightness, newScreenAutoBrightness);
+            }
             if (!withinThreshold) {
                 mPreThresholdBrightness = mScreenAutoBrightness;
             }
@@ -1358,6 +1383,41 @@ public class AutomaticBrightnessController {
             // Not used.
         }
     };
+
+    private class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+            updateUserMinBrightness();
+            mContext.getContentResolver().registerContentObserver(
+                    Settings.Global.getUriFor(Settings.Global.USER_MIN_AUTO_BRIGHTNESS),
+                            false, this);
+        }
+
+        void stop() {
+            mContext.getContentResolver().unregisterContentObserver(this);
+        }
+
+        void updateAll() {
+            updateUserMinBrightness();
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            switch (uri.getLastPathSegment()) {
+                case Settings.Global.USER_MIN_AUTO_BRIGHTNESS:
+                    updateUserMinBrightness();
+                    break;
+            }
+        }
+
+        private void updateUserMinBrightness() {
+            mUserMinBrightness = Settings.Global.getInt(mContext.getContentResolver(),
+                    Settings.Global.USER_MIN_AUTO_BRIGHTNESS, 0);
+        }
+    }
 
     // Call back whenever the tasks stack changes, which includes tasks being created, removed, and
     // moving to top.
