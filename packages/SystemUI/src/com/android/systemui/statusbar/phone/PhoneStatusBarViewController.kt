@@ -23,6 +23,8 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
+import android.widget.ImageView
+import android.widget.ProgressBar
 import com.android.systemui.Gefingerpoken
 import com.android.systemui.R
 import com.android.systemui.flags.FeatureFlags
@@ -32,6 +34,7 @@ import com.android.systemui.shade.ShadeController
 import com.android.systemui.shade.ShadeLogger
 import com.android.systemui.shade.ShadeViewController
 import com.android.systemui.shared.animation.UnfoldMoveFromCenterAnimator
+import com.android.systemui.statusbar.OnGoingActionProgressGroup
 import com.android.systemui.statusbar.policy.ConfigurationController
 import com.android.systemui.unfold.SysUIUnfoldComponent
 import com.android.systemui.unfold.UNFOLD_STATUS_BAR
@@ -155,6 +158,14 @@ class PhoneStatusBarViewController private constructor(
             centralSurfaces.setInteracting(WINDOW_STATUS_BAR,
                 !upOrCancel || shadeController.isExpandedVisible)
         }
+    }
+
+    fun getOngoingActionProgressGroup(): OnGoingActionProgressGroup{
+        return OnGoingActionProgressGroup(
+            mView.findViewById(R.id.status_bar_ongoing_action_chip),
+            mView.findViewById(R.id.ongoing_action_app_icon) as? ImageView ?: throw IllegalStateException("ImageView not found"),
+            mView.findViewById(R.id.app_action_progress) as? ProgressBar ?: throw IllegalStateException("ProgressBar not found"),
+        )
     }
 
     inner class PhoneStatusBarViewTouchHandler : Gefingerpoken {
