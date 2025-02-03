@@ -41,7 +41,7 @@ constructor(
 
     val text: Text =
         Text.Resource(
-            res = R.string.lock_screen_settings,
+            res = R.string.zen_priority_customize_button,
         )
 
     fun onTouchGestureStarted() {
