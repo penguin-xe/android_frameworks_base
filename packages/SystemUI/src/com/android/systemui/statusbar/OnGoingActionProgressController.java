@@ -36,7 +36,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
-import com.android.systemui.res.R;
+import com.android.systemui.R;
 import com.android.systemui.util.IconFetcher;
 import com.android.systemui.statusbar.OnGoingActionProgressGroup;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
