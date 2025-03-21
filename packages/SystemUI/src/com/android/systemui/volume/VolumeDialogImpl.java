@@ -85,6 +85,7 @@ import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.os.VibrationEffect;
 import android.provider.Settings;
 import android.provider.Settings.Global;
@@ -1516,10 +1517,10 @@ public class VolumeDialogImpl implements VolumeDialog, Dumpable,
             mAppVolumeIcon.setOnClickListener(v -> {
                 Events.writeEvent(Events.EVENT_SETTINGS_CLICK);
                 Intent intent = new Intent(Settings.Panel.ACTION_APP_VOLUME);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION | Intent.FLAG_ACTIVITY_NEW_TASK);
                 dismissH(DISMISS_REASON_SETTINGS_CLICKED);
                 Dependency.get(MediaOutputDialogFactory.class).dismiss();
-                Dependency.get(ActivityStarter.class).startActivity(intent,
-                        true /* dismissShade */);
+                mContext.startActivityAsUser(intent, UserHandle.CURRENT_OR_SELF);
             });
             Drawable icon = mAppVolumeActivePackageName != null ?
                     getApplicationIcon(mAppVolumeActivePackageName) : null;
