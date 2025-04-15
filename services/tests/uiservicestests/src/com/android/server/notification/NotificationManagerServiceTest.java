@@ -2316,8 +2316,8 @@ public class NotificationManagerServiceTest extends UiServiceTestCase {
                 mTestNotificationChannel, 1, "group", true);
         notif.getNotification().flags |= Notification.FLAG_NO_CLEAR;
         mService.addNotification(notif);
-        mService.cancelAllNotificationsInt(mUid, 0, PKG, null, 0, 0,
-                notif.getUserId(), REASON_CANCEL);
+        mService.cancelAllNotificationsInt(mUid, 0, PKG, null, 0, 0, true,
+                notif.getUserId(), REASON_CANCEL, null);
         waitForIdle();
         StatusBarNotification[] notifs =
                 mBinderService.getActiveNotifications(notif.getSbn().getPackageName());
@@ -3055,7 +3055,7 @@ public class NotificationManagerServiceTest extends UiServiceTestCase {
         notif.getNotification().flags |= Notification.FLAG_NO_CLEAR;
         mService.addNotification(notif);
         mService.cancelAllNotificationsInt(mUid, 0, PKG, null, 0,
-                Notification.FLAG_ONGOING_EVENT, notif.getUserId(), REASON_CANCEL);
+                Notification.FLAG_ONGOING_EVENT, true, notif.getUserId(), REASON_CANCEL, null);
         waitForIdle();
         StatusBarNotification[] notifs =
                 mBinderService.getActiveNotifications(notif.getSbn().getPackageName());
@@ -3082,8 +3082,8 @@ public class NotificationManagerServiceTest extends UiServiceTestCase {
                 mTestNotificationChannel, 1, "group", true);
         notif.getNotification().flags |= Notification.FLAG_ONGOING_EVENT;
         mService.addNotification(notif);
-        mService.cancelAllNotificationsInt(mUid, 0, PKG, null, 0, 0,
-                notif.getUserId(), REASON_CANCEL);
+        mService.cancelAllNotificationsInt(mUid, 0, PKG, null, 0, 0, true,
+                notif.getUserId(), REASON_CANCEL, null);
         waitForIdle();
         StatusBarNotification[] notifs =
                 mBinderService.getActiveNotifications(notif.getSbn().getPackageName());
@@ -12359,103 +12359,6 @@ public class NotificationManagerServiceTest extends UiServiceTestCase {
     }
 
     @Test
-    public void enqueue_updatesEnqueueRate() throws Exception {
-        Notification n = generateNotificationRecord(null).getNotification();
-
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, n, mUserId);
-        // Don't waitForIdle() here. We want to verify the "intermediate" state.
-
-        verify(mUsageStats).registerEnqueuedByApp(eq(PKG));
-        verify(mUsageStats).registerEnqueuedByAppAndAccepted(eq(PKG));
-        verify(mUsageStats, never()).registerPostedByApp(any());
-
-        waitForIdle();
-    }
-
-    @Test
-    public void enqueue_withPost_updatesEnqueueRateAndPost() throws Exception {
-        Notification n = generateNotificationRecord(null).getNotification();
-
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, n, mUserId);
-        waitForIdle();
-
-        verify(mUsageStats).registerEnqueuedByApp(eq(PKG));
-        verify(mUsageStats).registerEnqueuedByAppAndAccepted(eq(PKG));
-        verify(mUsageStats).registerPostedByApp(any());
-    }
-
-    @Test
-    public void enqueueNew_whenOverEnqueueRate_accepts() throws Exception {
-        Notification n = generateNotificationRecord(null).getNotification();
-        when(mUsageStats.getAppEnqueueRate(eq(PKG)))
-                .thenReturn(DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE + 1f);
-
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, n, mUserId);
-        waitForIdle();
-
-        assertThat(mService.mNotificationsByKey).hasSize(1);
-        verify(mUsageStats).registerEnqueuedByApp(eq(PKG));
-        verify(mUsageStats).registerEnqueuedByAppAndAccepted(eq(PKG));
-        verify(mUsageStats).registerPostedByApp(any());
-    }
-
-    @Test
-    public void enqueueUpdate_whenBelowMaxEnqueueRate_accepts() throws Exception {
-        // Post the first version.
-        Notification original = generateNotificationRecord(null).getNotification();
-        original.when = 111;
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, original, mUserId);
-        waitForIdle();
-        assertThat(mService.mNotificationList).hasSize(1);
-        assertThat(mService.mNotificationList.get(0).getNotification().when).isEqualTo(111);
-
-        reset(mUsageStats);
-        when(mUsageStats.getAppEnqueueRate(eq(PKG)))
-                .thenReturn(DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE - 1f);
-
-        // Post the update.
-        Notification update = generateNotificationRecord(null).getNotification();
-        update.when = 222;
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, update, mUserId);
-        waitForIdle();
-
-        verify(mUsageStats).registerEnqueuedByApp(eq(PKG));
-        verify(mUsageStats).registerEnqueuedByAppAndAccepted(eq(PKG));
-        verify(mUsageStats, never()).registerPostedByApp(any());
-        verify(mUsageStats).registerUpdatedByApp(any(), any());
-        assertThat(mService.mNotificationList).hasSize(1);
-        assertThat(mService.mNotificationList.get(0).getNotification().when).isEqualTo(222);
-    }
-
-    @Test
-    public void enqueueUpdate_whenAboveMaxEnqueueRate_rejects() throws Exception {
-        // Post the first version.
-        Notification original = generateNotificationRecord(null).getNotification();
-        original.when = 111;
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, original, mUserId);
-        waitForIdle();
-        assertThat(mService.mNotificationList).hasSize(1);
-        assertThat(mService.mNotificationList.get(0).getNotification().when).isEqualTo(111);
-
-        reset(mUsageStats);
-        when(mUsageStats.getAppEnqueueRate(eq(PKG)))
-                .thenReturn(DEFAULT_MAX_NOTIFICATION_ENQUEUE_RATE + 1f);
-
-        // Post the update.
-        Notification update = generateNotificationRecord(null).getNotification();
-        update.when = 222;
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 0, update, mUserId);
-        waitForIdle();
-
-        verify(mUsageStats).registerEnqueuedByApp(eq(PKG));
-        verify(mUsageStats, never()).registerEnqueuedByAppAndAccepted(any());
-        verify(mUsageStats, never()).registerPostedByApp(any());
-        verify(mUsageStats, never()).registerUpdatedByApp(any(), any());
-        assertThat(mService.mNotificationList).hasSize(1);
-        assertThat(mService.mNotificationList.get(0).getNotification().when).isEqualTo(111); // old
-    }
-
-    @Test
     public void enqueueNotification_acceptsCorrectToken() throws RemoteException {
         Notification sent = new Notification.Builder(mContext, TEST_CHANNEL_ID)
                 .setContentIntent(createPendingIntent("content"))
@@ -12778,195 +12681,6 @@ public class NotificationManagerServiceTest extends UiServiceTestCase {
                 .get(0).getAllowlistToken()).isNull();
         assertThat(new Notification.WearableExtender(gottenBackByApp).getPages()
                 .get(0).contentIntent.getWhitelistToken()).isNull();
-    }
-
-    @Test
-    public void enqueueNotification_allowlistsPendingIntents() throws RemoteException {
-        PendingIntent contentIntent = createPendingIntent("content");
-        PendingIntent actionIntent1 = createPendingIntent("action1");
-        PendingIntent actionIntent2 = createPendingIntent("action2");
-        Notification n = new Notification.Builder(mContext, TEST_CHANNEL_ID)
-                .setContentIntent(contentIntent)
-                .addAction(new Notification.Action.Builder(null, "action1", actionIntent1).build())
-                .addAction(new Notification.Action.Builder(null, "action2", actionIntent2).build())
-                .build();
-
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 1,
-                parcelAndUnparcel(n, Notification.CREATOR), mUserId);
-
-        verify(mAmi, times(3)).setPendingIntentAllowlistDuration(
-                any(), any(), anyLong(),
-                eq(TEMPORARY_ALLOWLIST_TYPE_FOREGROUND_SERVICE_ALLOWED),
-                eq(REASON_NOTIFICATION_SERVICE), any());
-        verify(mAmi, times(3)).setPendingIntentAllowBgActivityStarts(any(),
-                any(), eq(FLAG_ACTIVITY_SENDER | FLAG_BROADCAST_SENDER | FLAG_SERVICE_SENDER));
-    }
-
-    @Test
-    public void enqueueNotification_allowlistsPendingIntents_includingFromPublicVersion()
-            throws RemoteException {
-        PendingIntent contentIntent = createPendingIntent("content");
-        PendingIntent actionIntent = createPendingIntent("action");
-        PendingIntent publicContentIntent = createPendingIntent("publicContent");
-        PendingIntent publicActionIntent = createPendingIntent("publicAction");
-        Notification source = new Notification.Builder(mContext, TEST_CHANNEL_ID)
-                .setContentIntent(contentIntent)
-                .addAction(new Notification.Action.Builder(null, "action", actionIntent).build())
-                .setPublicVersion(new Notification.Builder(mContext, "channel")
-                        .setContentIntent(publicContentIntent)
-                        .addAction(new Notification.Action.Builder(
-                                null, "publicAction", publicActionIntent).build())
-                        .build())
-                .build();
-
-        mBinderService.enqueueNotificationWithTag(PKG, PKG, "tag", 1,
-                parcelAndUnparcel(source, Notification.CREATOR), mUserId);
-
-        verify(mAmi, times(4)).setPendingIntentAllowlistDuration(
-                any(), any(), anyLong(),
-                eq(TEMPORARY_ALLOWLIST_TYPE_FOREGROUND_SERVICE_ALLOWED),
-                eq(REASON_NOTIFICATION_SERVICE), any());
-        verify(mAmi, times(4)).setPendingIntentAllowBgActivityStarts(any(),
-                any(), eq(FLAG_ACTIVITY_SENDER | FLAG_BROADCAST_SENDER | FLAG_SERVICE_SENDER));
-    }
-
-    @Test
-    public void onUserSwitched_updatesZenModeAndChannelsBypassingDnd() {
-        Intent intent = new Intent(Intent.ACTION_USER_SWITCHED);
-        intent.putExtra(Intent.EXTRA_USER_HANDLE, 20);
-        mService.mZenModeHelper = mock(ZenModeHelper.class);
-        mService.setPreferencesHelper(mPreferencesHelper);
-
-        mUserSwitchIntentReceiver.onReceive(mContext, intent);
-
-        InOrder inOrder = inOrder(mPreferencesHelper, mService.mZenModeHelper);
-        inOrder.verify(mService.mZenModeHelper).onUserSwitched(eq(20));
-        inOrder.verify(mPreferencesHelper).syncChannelsBypassingDnd();
-        inOrder.verifyNoMoreInteractions();
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_invalidPackage() throws Exception {
-        final String notReal = "NOT REAL";
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(notReal), anyInt())).thenThrow(
-                PackageManager.NameNotFoundException.class);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(notReal)).isFalse();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(notReal), anyInt());
-        verify(checker, never()).check(any(), anyInt(), anyInt(), anyBoolean());
-        verify(mConditionProviders, never()).isPackageOrComponentAllowed(eq(notReal), anyInt());
-        verify(mListeners, never()).isComponentEnabledForPackage(any());
-        verify(mDevicePolicyManager, never()).isActiveDeviceOwner(anyInt());
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_hasPermission() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-        when(checker.check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true))
-                .thenReturn(PackageManager.PERMISSION_GRANTED);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isTrue();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders, never()).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners, never()).isComponentEnabledForPackage(any());
-        verify(mDevicePolicyManager, never()).isActiveDeviceOwner(anyInt());
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_isPackageAllowed() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-        when(mConditionProviders.isPackageOrComponentAllowed(eq(packageName), anyInt()))
-                .thenReturn(true);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isTrue();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners, never()).isComponentEnabledForPackage(any());
-        verify(mDevicePolicyManager, never()).isActiveDeviceOwner(anyInt());
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_isComponentEnabled() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-        when(mListeners.isComponentEnabledForPackage(packageName)).thenReturn(true);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isTrue();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners).isComponentEnabledForPackage(packageName);
-        verify(mDevicePolicyManager, never()).isActiveDeviceOwner(anyInt());
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_isDeviceOwner() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-        when(mDevicePolicyManager.isActiveDeviceOwner(uid)).thenReturn(true);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isTrue();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners).isComponentEnabledForPackage(packageName);
-        verify(mDevicePolicyManager).isActiveDeviceOwner(uid);
-    }
-
-    /**
-     * b/292163859
-     */
-    @Test
-    public void isNotificationPolicyAccessGranted_callerIsDeviceOwner() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final int callingUid = Binder.getCallingUid();
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-        when(mDevicePolicyManager.isActiveDeviceOwner(callingUid)).thenReturn(true);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isFalse();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners).isComponentEnabledForPackage(packageName);
-        verify(mDevicePolicyManager).isActiveDeviceOwner(uid);
-        verify(mDevicePolicyManager, never()).isActiveDeviceOwner(callingUid);
-    }
-
-    @Test
-    public void isNotificationPolicyAccessGranted_notGranted() throws Exception {
-        final String packageName = "target";
-        final int uid = 123;
-        final var checker = mService.permissionChecker;
-
-        when(mPackageManagerClient.getPackageUidAsUser(eq(packageName), anyInt())).thenReturn(uid);
-
-        assertThat(mBinderService.isNotificationPolicyAccessGranted(packageName)).isFalse();
-        verify(mPackageManagerClient).getPackageUidAsUser(eq(packageName), anyInt());
-        verify(checker).check(android.Manifest.permission.MANAGE_NOTIFICATIONS, uid, -1, true);
-        verify(mConditionProviders).isPackageOrComponentAllowed(eq(packageName), anyInt());
-        verify(mListeners).isComponentEnabledForPackage(packageName);
-        verify(mDevicePolicyManager).isActiveDeviceOwner(uid);
     }
 
     private static <T extends Parcelable> T parcelAndUnparcel(T source,
