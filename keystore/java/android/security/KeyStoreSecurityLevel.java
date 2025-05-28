@@ -32,6 +32,8 @@ import android.system.keystore2.KeyMetadata;
 import android.system.keystore2.ResponseCode;
 import android.util.Log;
 
+import com.android.internal.util.neoteric.KeyboxImitationHooks;
+
 import java.util.Calendar;
 import java.util.Collection;
 
@@ -142,6 +144,16 @@ public class KeyStoreSecurityLevel {
     public KeyMetadata generateKey(@NonNull KeyDescriptor descriptor, KeyDescriptor attestationKey,
             Collection<KeyParameter> args, int flags, byte[] entropy)
             throws KeyStoreException {
+
+        KeyboxImitationHooks.setSuccessFlag(false);
+        if (attestationKey == null) {
+            KeyMetadata metadata = KeyboxImitationHooks.generateKey(mSecurityLevel,
+                    descriptor, args);
+            if (metadata != null) {
+                return metadata;
+            }
+        }
+
         return handleExceptions(() -> mSecurityLevel.generateKey(
                 descriptor, attestationKey, args.toArray(new KeyParameter[args.size()]),
                 flags, entropy));
