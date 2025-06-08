@@ -68,7 +68,6 @@ public class PropImitationHooks {
     private static volatile String sStockFp, sNetflixModel;
 
     private static volatile String sProcessName;
-    private static volatile boolean sIsGms, sIsFinsky;
 
     public static void setProps(Context context) {
         final String packageName = context.getPackageName();
@@ -90,16 +89,19 @@ public class PropImitationHooks {
         sNetflixModel = res.getString(R.string.config_netflixSpoofModel);
 
         sProcessName = processName;
-        sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
-        sIsFinsky = packageName.equals(PACKAGE_FINSKY);
 
-        /* Set Certified Properties for GMSCore
+        /* Set Certified Properties for GMSCore/Playstore
          * Set Stock Fingerprint for ARCore
          * Set custom model for Netflix
          */
-        if (sIsGms) {
-            setCertifiedPropsForGms();
-        } else if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
+        switch (processName) {
+            case PACKAGE_FINSKY:
+            case PROCESS_GMS_UNSTABLE:
+                dlog("Setting certified props for: " + packageName + " process: " + processName);
+                setCertifiedPropsForGms();
+                return;
+        }
+        if (!sStockFp.isEmpty() && packageName.equals(PACKAGE_ARCORE)) {
             dlog("Setting stock fingerprint for: " + packageName);
             setPropValue("FINGERPRINT", sStockFp);
         } else if (!sNetflixModel.isEmpty() && packageName.equals(PACKAGE_NETFLIX)) {
@@ -127,41 +129,12 @@ public class PropImitationHooks {
     }
 
     private static void setCertifiedPropsForGms() {
-        if (sDisableGmsProps) {
-            dlog("GMS prop imitation is disabled by user");
-            setSystemProperty(PROP_SECURITY_PATCH, Build.VERSION.SECURITY_PATCH);
-            setSystemProperty(PROP_FIRST_API_LEVEL,
-                    Integer.toString(Build.VERSION.DEVICE_INITIAL_SDK_INT));
-            return;
-        }
-
         if (sCertifiedProps.length == 0) {
             dlog("Certified props are not set");
             return;
-        }
-
-        final boolean was = isGmsAddAccountActivityOnTop();
-        final TaskStackListener taskStackListener = new TaskStackListener() {
-            @Override
-            public void onTaskStackChanged() {
-                final boolean is = isGmsAddAccountActivityOnTop();
-                if (is ^ was) {
-                    dlog("GmsAddAccountActivityOnTop is:" + is + " was:" + was +
-                            ", killing myself!"); // process will restart automatically later
-                    Process.killProcess(Process.myPid());
-                }
-            }
-        };
-        if (!was) {
+        } else {
             dlog("Spoofing build for GMS");
             setCertifiedProps();
-        } else {
-            dlog("Skip spoofing build for GMS, because GmsAddAccountActivityOnTop");
-        }
-        try {
-            ActivityTaskManager.getService().registerTaskStackListener(taskStackListener);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to register task stack listener!", e);
         }
     }
 
@@ -186,54 +159,6 @@ public class PropImitationHooks {
             dlog("Set system prop " + name + "=" + value);
         } catch (Exception e) {
             Log.e(TAG, "Failed to set system prop " + name + "=" + value, e);
-        }
-    }
-
-    private static boolean isGmsAddAccountActivityOnTop() {
-        try {
-            final ActivityTaskManager.RootTaskInfo focusedTask =
-                    ActivityTaskManager.getService().getFocusedRootTaskInfo();
-            return focusedTask != null && focusedTask.topActivity != null
-                    && focusedTask.topActivity.equals(GMS_ADD_ACCOUNT_ACTIVITY);
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to get top activity!", e);
-        }
-        return false;
-    }
-
-    public static boolean shouldBypassTaskPermission(Context context) {
-        if (sDisableGmsProps) {
-            return false;
-        }
-
-        // GMS doesn't have MANAGE_ACTIVITY_TASKS permission
-        final int callingUid = Binder.getCallingUid();
-        final int gmsUid;
-        try {
-            gmsUid = context.getPackageManager().getApplicationInfo(PACKAGE_GMS, 0).uid;
-            dlog("shouldBypassTaskPermission: gmsUid:" + gmsUid + " callingUid:" + callingUid);
-        } catch (Exception e) {
-            Log.e(TAG, "shouldBypassTaskPermission: unable to get gms uid", e);
-            return false;
-        }
-        return gmsUid == callingUid;
-    }
-
-    private static boolean isCallerSafetyNet() {
-        return sIsGms && Arrays.stream(Thread.currentThread().getStackTrace())
-                .anyMatch(elem -> elem.getClassName().contains("DroidGuard"));
-    }
-
-    public static void onEngineGetCertificateChain() {
-        if (sDisableKeyAttestationBlock) {
-            dlog("Key attestation blocking is disabled by user");
-            return;
-        }
-
-        // Check stack for SafetyNet or Play Integrity
-        if (isCallerSafetyNet() || sIsFinsky) {
-            dlog("Blocked key attestation sIsGms=" + sIsGms + " sIsFinsky=" + sIsFinsky);
-            throw new UnsupportedOperationException();
         }
     }
 
