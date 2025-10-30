@@ -369,9 +369,9 @@ public class BatteryMeterView extends LinearLayout implements DarkReceiver {
             mEstimateText = null;
             // Use the high voltage symbol ⚡ (u26A1 unicode) but prevent the system
             // to load its emoji colored variant with the uFE0E flag
-            //String bolt = "\u26A1\uFE0E";
+            String bolt = "\u26A1\uFE0E";
             CharSequence mChargeIndicator = isCharging() && (mBatteryStyle == BATTERY_STYLE_TEXT)
-                ? "+ " : "";
+                ? (bolt + " ") : "";
             String percentText = mChargeIndicator + NumberFormat.getPercentInstance().format(mLevel / 100f);
             // Setting text actually triggers a layout pass (because the text view is set to
             // wrap_content width and TextView always relayouts for this). Avoid needless
