@@ -60,10 +60,13 @@ public class BigPictureNotificationImageView extends ImageView {
     public BigPictureNotificationImageView(@NonNull Context context, @Nullable AttributeSet attrs,
             @AttrRes int defStyleAttr, @StyleRes int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        int maxDimension = context.getResources().getInteger(
-                com.android.internal.R.integer.config_maxBitmapSizePx);
-        mMaximumDrawableWidth = maxDimension;
-        mMaximumDrawableHeight = maxDimension;
+        boolean isLowRam = true;
+        mMaximumDrawableWidth = context.getResources().getDimensionPixelSize(
+                isLowRam ? R.dimen.notification_big_picture_max_width_low_ram
+                        : R.dimen.notification_big_picture_max_width);
+        mMaximumDrawableHeight = context.getResources().getDimensionPixelSize(
+                isLowRam ? R.dimen.notification_big_picture_max_height_low_ram
+                        : R.dimen.notification_big_picture_max_height);
     }
 
     @Override
