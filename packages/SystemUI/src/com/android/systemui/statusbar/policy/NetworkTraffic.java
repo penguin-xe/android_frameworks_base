@@ -257,11 +257,11 @@ public class NetworkTraffic extends TextView {
     }
 
     protected RelativeSizeSpan getSpeedRelativeSizeSpan() {
-        return new RelativeSizeSpan(0.70f);
+        return new RelativeSizeSpan(0.65f);
     }
 
     protected RelativeSizeSpan getUnitRelativeSizeSpan() {
-        return new RelativeSizeSpan(0.65f);
+        return new RelativeSizeSpan(0.60f);
     }
 
     private Runnable mRunnable = new Runnable() {
